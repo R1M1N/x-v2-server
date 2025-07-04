@@ -5,6 +5,8 @@ import { TwitterService } from './x/services.js';
 import { ApiRequestError } from "twitter-api-v2";
 // Initialize the Twitter service
 const twitterService = TwitterService.getInstance();
+import { scheduleTweet } from './x/schedule-tweet.js';
+
 
 // Create an MCP server
 const server = new McpServer({
@@ -70,6 +72,14 @@ const server = new McpServer({
           targetUserId: z.string().describe("The ID of the user to unfollow")
         })
       },
+      "schedule_tweet": {
+        description: "Schedule a tweet at a future date/time",
+        parameters: z.object({
+          text: z.string().describe("The text content of the tweet"),
+          runAt: z.string().describe("The ISO-8601 date/time to post the tweet (e.g., 2025-07-04T02:00:00Z)")
+        })
+      },
+
       "get_user_by_username": {
         description: "Get a user by username",
         parameters: z.object({
@@ -135,6 +145,7 @@ server.tool("get_tweets_by_userid",
   }
 );
 
+
 server.tool("get_tweet_by_id",
   {
     tweetId: z.string().describe("The ID of the tweet to retrieve")
@@ -157,6 +168,18 @@ server.tool("get_user_mentions",
     const mentions = await twitterService.getUserMentionTimeline(userId, paginationToken, maxResults);
     return {
       content: [{ type: "text", text: JSON.stringify(mentions, null, 2) }]
+    };
+  }
+);
+server.tool("schedule_tweet",
+  {
+    text: z.string().describe("The text content of the tweet"),
+    runAt: z.string().describe("The ISO-8601 date/time to post the tweet")
+  },
+  async ({ text, runAt }) => {
+    const result = await scheduleTweet(text, runAt);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }]
     };
   }
 );
